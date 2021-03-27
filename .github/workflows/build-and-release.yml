@@ -23,6 +23,13 @@ jobs:
           path: "~/.m2"
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      - name: "Extract Maven project version"
+        run: |
+          echo "RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+      - uses: nick-invision/persist-action-data@v1
+        with:
+          data: ${{ env.RELEASE_VERSION }}
+          variable: RELEASE_VERSION
       - name: "Maven build"
         run: mvn clean install
       - uses: actions/upload-artifact@master
@@ -40,12 +47,21 @@ jobs:
         with:
           name: jarfile
           path: target/TwitterScreenshotBot.jar
+      - uses: nick-invision/persist-action-data@v1
+        id: data
+        with:
+          data: ${{ env.RELEASE_VERSION }}
+          retrieve_variables: RELEASE_VERSION
+      - run: echo $RELEASE_VERSION
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          automatic_release_tag: "v${{ steps.data.outputs.RELEASE_VERSION }}"
           prerelease: false
           draft: false
-          title: "Development Build"
+          title: "Build for version v${{ steps.data.outputs.RELEASE_VERSION }}"
           files: |
             target/TwitterScreenshotBot.jar
+      - uses: geekyeggo/delete-artifact@v1
+        with:
+          name: jarfile
