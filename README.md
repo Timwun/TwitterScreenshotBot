@@ -1,5 +1,7 @@
 # TwitterScreenshotBot
 
+[![Build and Release](https://github.com/Timwun/TwitterScreenshotBot/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/Timwun/TwitterScreenshotBot/actions/workflows/build-and-release.yml)
+
 ## Download
 Download the latest Jar file from [GitHub Releases](https://github.com/Timwun/TwitterScreenshotBot/releases).
 
