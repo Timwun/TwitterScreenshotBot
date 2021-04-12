@@ -3,6 +3,7 @@ package de.nerdis;
 import de.nerdis.apis.Config;
 import de.nerdis.apis.TwitterUser;
 import de.nerdis.apis.WebPageScreenshotTaker;
+import org.apache.commons.io.FileUtils;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -10,9 +11,13 @@ import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -37,22 +42,36 @@ public class Main {
 
         ArrayList<TwitterUser> twitterUserList = new ArrayList<>(Arrays.stream(config.getTwitterUsers()).map(TwitterUser::new).collect(Collectors.toList()));
 
-        for (TwitterUser twitterUser: twitterUserList) {
-            List<Status> statusList = twitter.getUserTimeline(twitterUser.getUserName());
-            Status lastStatus = statusList.get(0);
+        ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
+        execService.scheduleAtFixedRate(() -> {
+            for (TwitterUser twitterUser : twitterUserList) {
+                List<Status> statusList = null;
+                try {
+                    statusList = twitter.getUserTimeline(twitterUser.getUserName());
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+                Status lastStatus = statusList.get(0);
 
-            // Check if lastTweetId isn't the same as the latest Tweet Id.
-            if(twitterUser.getLastTweetId() != lastStatus.getId()) {
-                twitterUser.setLastTweetId(lastStatus.getId());
+                // Check if lastTweetId isn't the same as the latest Tweet Id.
+                if (twitterUser.getLastTweetId() != lastStatus.getId()) {
+                    twitterUser.setLastTweetId(lastStatus.getId());
 
-                String url = "https://twitter.com/" + lastStatus.getUser().getScreenName() + "/status/" + lastStatus.getId();
-                File image = webPageScreenshotTaker.capture(url);
+                    String url = "https://twitter.com/" + lastStatus.getUser().getScreenName() + "/status/" + lastStatus.getId();
+                    File image = webPageScreenshotTaker.capture(url);
+                    try {
+                        FileUtils.copyFile(image, new File(lastStatus.getUser().getScreenName() + "_" + lastStatus.getId() + ".png"));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
-                // TODO Implement Image Upload Service
+                    // TODO Implement Image Upload Service
+                }
             }
-        }
+        }, 0, 2L, TimeUnit.MINUTES);
+
+
 
     }
-
 
 }
