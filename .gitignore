@@ -11,3 +11,6 @@ chromedriver
 
 # Maven
 target/
+
+# Images
+*.png

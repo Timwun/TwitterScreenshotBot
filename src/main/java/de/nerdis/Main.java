@@ -10,6 +10,7 @@ import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
+import javax.swing.plaf.synth.SynthTreeUI;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class Main {
 
-    public static void main(String[] args) throws TwitterException {
+    public static void main(String[] args) {
 
         // Load configurations
         Config config = new Config(".TwitterScreenshotBotCredentials", ".TwitterScreenshotBotUserList");
@@ -38,10 +39,18 @@ public class Main {
         TwitterFactory tf = new TwitterFactory(cb.build());
         final Twitter twitter = tf.getInstance();
 
+        // Initiate WebPageScreenshotTaker
         WebPageScreenshotTaker webPageScreenshotTaker = new WebPageScreenshotTaker();
 
-        ArrayList<TwitterUser> twitterUserList = new ArrayList<>(Arrays.stream(config.getTwitterUsers()).map(TwitterUser::new).collect(Collectors.toList()));
+        // Map TwitterUser to ArrayList
+        ArrayList<TwitterUser> twitterUserList = Arrays.stream(config.getTwitterUsers()).map(TwitterUser::new).collect(Collectors.toCollection(ArrayList::new));
 
+        if(twitterUserList.size() >= 180) {
+            System.err.println("Too many Users, only 180 are allowed.");
+            System.exit(1);
+        }
+
+        // Run every 2 Minutes
         ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
         execService.scheduleAtFixedRate(() -> {
             for (TwitterUser twitterUser : twitterUserList) {
@@ -58,6 +67,8 @@ public class Main {
                     twitterUser.setLastTweetId(lastStatus.getId());
 
                     String url = "https://twitter.com/" + lastStatus.getUser().getScreenName() + "/status/" + lastStatus.getId();
+
+                    // Take Image
                     File image = webPageScreenshotTaker.capture(url);
                     try {
                         FileUtils.copyFile(image, new File(lastStatus.getUser().getScreenName() + "_" + lastStatus.getId() + ".png"));
@@ -68,9 +79,7 @@ public class Main {
                     // TODO Implement Image Upload Service
                 }
             }
-        }, 0, 2L, TimeUnit.MINUTES);
-
-
+        }, 0L, 5L, TimeUnit.SECONDS);
 
     }
 
