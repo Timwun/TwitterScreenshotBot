@@ -10,7 +10,6 @@ import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-import javax.swing.plaf.synth.SynthTreeUI;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
